@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>위병소 보고 생성기</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="위병소 보고">
+<style>
+:root{
+  --bg:#f4f5f7;
+  --card:#fff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#d8dde5;
+  --dark:#111827;
+  --soft:#eef1f5;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:14px 12px 132px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
+}
+.app{max-width:720px;margin:0 auto}
+h1{font-size:21px;margin:4px 0 12px}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:11px;
+}
+.label{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:800;
+  margin:0 0 7px;
+}
+.top-row{
+  display:grid;
+  grid-template-columns:1.2fr 1.8fr;
+  gap:9px;
+}
+.rank-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:6px;
+}
+.two-row{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+button{
+  border:1px solid var(--line);
+  background:var(--soft);
+  color:var(--text);
+  border-radius:14px;
+  padding:12px 8px;
+  font-size:15px;
+  font-weight:900;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+button.active{
+  background:var(--dark);
+  border-color:var(--dark);
+  color:white;
+}
+.big-tab{font-size:18px;padding:16px 8px}
+input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:12px;
+  font-size:16px;
+}
+.section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.section-head strong{font-size:15px}
+.section-head span{font-size:12px;color:var(--muted)}
+.hidden{display:none !important}
+.extra-box{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+  padding-top:10px;
+  border-top:1px dashed var(--line);
+}
+.help{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+.result-box{
+  margin-top:10px;
+  padding:13px;
+  background:#111827;
+  color:#fff;
+  border-radius:14px;
+  line-height:1.55;
+  font-size:15px;
+}
+details summary{
+  list-style:none;
+  cursor:pointer;
+  font-weight:900;
+}
+details summary::-webkit-details-marker{display:none}
+.bottom-bar{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:10;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.95);
+  border-top:1px solid var(--line);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.bottom-inner{max-width:720px;margin:0 auto}
+.mini{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:10px 12px;
+  margin-bottom:8px;
+}
+#miniSummary{
+  font-weight:900;
+  font-size:14px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+#miniTime{
+  flex:none;
+  color:var(--muted);
+  font-size:12px;
+}
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr .82fr;
+  gap:7px;
+}
+.actions button{
+  border:0;
+  padding:11px 6px;
+  font-size:14px;
+}
+.primary{background:#111827;color:#fff}
+.secondary{background:#e8ebf0;color:#111827}
+.danger{background:#fee2e2;color:#991b1b}
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:116px;
+  transform:translateX(-50%);
+  background:#111827;
+  color:#fff;
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:.18s;
+  z-index:30;
+}
+.toast.show{opacity:1}
+@media(max-width:430px){
+  .top-row{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  .actions button{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>위병소 보고 생성기</h1>
+
+  <div class="card">
+    <div class="top-row">
+      <div>
+        <p class="label">계급</p>
+        <div class="rank-row" id="rankGroup">
+          <button data-value="이병">이병</button>
+          <button data-value="일병">일병</button>
+          <button data-value="상병">상병</button>
+          <button data-value="병장">병장</button>
+        </div>
+      </div>
+      <div>
+        <p class="label">이름</p>
+        <input id="nameInput" type="text" placeholder="이름 입력">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <strong>분류</strong>
+      <span>1차 선택</span>
+    </div>
+    <div class="two-row" id="categoryGroup">
+      <button class="big-tab" data-value="출타">출타</button>
+      <button class="big-tab" data-value="기타">기타</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <strong id="detailTitle">출타 내용</strong>
+      <span>2차 선택</span>
+    </div>
+
+    <div class="grid" id="outingGroup">
+      <button data-value="평일외출">평일외출</button>
+      <button data-value="주말외출">주말외출</button>
+      <button data-value="외박">외박</button>
+      <button data-value="휴가">휴가</button>
+    </div>
+
+    <div class="grid hidden" id="etcGroup">
+      <button data-value="외진">외진</button>
+      <button data-value="진료외출">진료외출</button>
+      <button data-value="직접입력">직접입력</button>
+    </div>
+
+    <div class="extra-box hidden" id="vacationFields">
+      <input id="vacationKindInput" type="text" placeholder="휴가 종류/일수 예: 혹한기유공1일, 연가1일">
+      <input id="vacationDateInput" type="text" placeholder="날짜 예: 1.1~3">
+      <div class="help">휴가를 선택했을 때만 표시됩니다. 결과: 휴가(혹한기유공1일, 연가1일, 1.1~3)</div>
+    </div>
+
+    <div class="extra-box hidden" id="customFields">
+      <input id="customInput" type="text" placeholder="직접입력 내용">
+      <div class="help">기타 → 직접입력을 선택했을 때만 표시됩니다.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <strong>출발 / 복귀</strong>
+      <span>좌우 선택</span>
+    </div>
+    <div class="two-row" id="directionGroup">
+      <button class="big-tab" data-value="출발">출발</button>
+      <button class="big-tab" data-value="복귀">복귀</button>
+    </div>
+  </div>
+
+  <details class="card" open>
+    <summary>완성된 텍스트</summary>
+    <div class="result-box" id="result"></div>
+  </details>
+</div>
+
+<div class="bottom-bar">
+  <div class="bottom-inner">
+    <div class="mini">
+      <div id="miniSummary"></div>
+      <div id="miniTime"></div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="shareResult()">공유</button>
+      <button class="secondary" onclick="refreshTime()">시간갱신</button>
+      <button class="secondary" onclick="copyResult()">복사</button>
+      <button class="danger" onclick="resetForm()">초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const state = {
+  rank: localStorage.getItem("guard_rank") || "상병",
+  name: localStorage.getItem("guard_name") || "",
+  category: "출타",
+  detail: "평일외출",
+  direction: "출발",
+  time: ""
+};
+
+function currentTime(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
+function showToast(text){
+  $("toast").textContent = text;
+  $("toast").classList.add("show");
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => $("toast").classList.remove("show"), 1300);
+}
+
+function activate(groupId, value){
+  document.querySelectorAll("#" + groupId + " button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.value === value);
+  });
+}
+
+function getDetailText(){
+  if(state.category === "출타" && state.detail === "휴가"){
+    const kind = $("vacationKindInput").value.trim();
+    const date = $("vacationDateInput").value.trim();
+    const parts = [];
+    if(kind) parts.push(kind);
+    if(date) parts.push(date);
+    return parts.length ? "휴가(" + parts.join(", ") + ")" : "휴가";
+  }
+
+  if(state.category === "기타" && state.detail === "직접입력"){
+    return $("customInput").value.trim() || "직접입력";
+  }
+
+  return state.detail;
+}
+
+function updateConditionalFields(){
+  const isOuting = state.category === "출타";
+  const isEtc = state.category === "기타";
+  const showVacation = isOuting && state.detail === "휴가";
+  const showCustom = isEtc && state.detail === "직접입력";
+
+  $("outingGroup").classList.toggle("hidden", !isOuting);
+  $("etcGroup").classList.toggle("hidden", !isEtc);
+  $("vacationFields").classList.toggle("hidden", !showVacation);
+  $("customFields").classList.toggle("hidden", !showCustom);
+  $("detailTitle").textContent = isOuting ? "출타 내용" : "기타 내용";
+}
+
+function buildText(){
+  const name = state.name.trim() || "이름";
+  return `충성! ${state.rank} ${name} ${state.time}분부로 위병소 통과하여 ${getDetailText()} ${state.direction}하였습니다.`;
+}
+
+function render(){
+  localStorage.setItem("guard_rank", state.rank);
+  localStorage.setItem("guard_name", state.name);
+
+  activate("rankGroup", state.rank);
+  activate("categoryGroup", state.category);
+  activate("outingGroup", state.category === "출타" ? state.detail : "");
+  activate("etcGroup", state.category === "기타" ? state.detail : "");
+  activate("directionGroup", state.direction);
+
+  updateConditionalFields();
+
+  $("result").textContent = buildText();
+  $("miniSummary").textContent = `${getDetailText()} · ${state.direction}`;
+  $("miniTime").textContent = state.time;
+}
+
+function refreshTime(){
+  state.time = currentTime();
+  render();
+  showToast("시간 갱신됨");
+}
+
+async function copyResult(){
+  try{
+    await navigator.clipboard.writeText(buildText());
+    showToast("복사됨");
+  }catch(e){
+    alert("복사에 실패했습니다.");
+  }
+}
+
+async function shareResult(){
+  const text = buildText();
+  if(navigator.share){
+    try{
+      await navigator.share({title:"위병소 보고", text});
+    }catch(e){}
+  }else{
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast("공유 미지원: 복사됨");
+    }catch(e){
+      alert("공유에 실패했습니다.");
+    }
+  }
+}
+
+function resetForm(){
+  state.category = "출타";
+  state.detail = "평일외출";
+  state.direction = "출발";
+  state.time = currentTime();
+  $("vacationKindInput").value = "";
+  $("vacationDateInput").value = "";
+  $("customInput").value = "";
+  render();
+  showToast("초기화됨");
+}
+
+document.querySelectorAll("#rankGroup button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.rank = btn.dataset.value;
+    render();
+  });
+});
+
+document.querySelectorAll("#categoryGroup button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.category = btn.dataset.value;
+    state.detail = state.category === "출타" ? "평일외출" : "외진";
+    $("vacationKindInput").value = "";
+    $("vacationDateInput").value = "";
+    $("customInput").value = "";
+    render();
+  });
+});
+
+document.querySelectorAll("#outingGroup button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.detail = btn.dataset.value;
+    if(state.detail !== "휴가"){
+      $("vacationKindInput").value = "";
+      $("vacationDateInput").value = "";
+    }
+    render();
+  });
+});
+
+document.querySelectorAll("#etcGroup button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.detail = btn.dataset.value;
+    if(state.detail !== "직접입력"){
+      $("customInput").value = "";
+    }
+    render();
+  });
+});
+
+document.querySelectorAll("#directionGroup button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.direction = btn.dataset.value;
+    render();
+  });
+});
+
+$("nameInput").addEventListener("input", e => {
+  state.name = e.target.value;
+  render();
+});
+
+$("vacationKindInput").addEventListener("input", render);
+$("vacationDateInput").addEventListener("input", render);
+$("customInput").addEventListener("input", render);
+
+state.time = currentTime();
+$("nameInput").value = state.name;
+render();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  });
+}
+
+</script>
+</body>
+</html>
